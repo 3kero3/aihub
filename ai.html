@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.puter.com/v2/"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // Icon Components (keep all the same icon components as before)
+        const Icon = ({ children, size = 24, className = "", ...props }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+                {children}
+            </svg>
+        );
+
+        const Search = (props) => (
+            <Icon {...props}>
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </Icon>
+        );
+        
+        const Plus = (props) => (
+            <Icon {...props}>
+                <path d="M5 12h14"></path>
+                <path d="M12 5v14"></path>
+            </Icon>
+        );
+        
+        const Sun = (props) => (
+            <Icon {...props}>
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path>
+                <path d="M12 20v2"></path>
+                <path d="m4.93 4.93 1.41 1.41"></path>
+                <path d="m17.66 17.66 1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="M20 12h2"></path>
+                <path d="m6.34 17.66-1.41 1.41"></path>
+                <path d="m19.07 4.93-1.41 1.41"></path>
+            </Icon>
+        );
+        
+        const Moon = (props) => (
+            <Icon {...props}>
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+            </Icon>
+        );
+        
+        const Send = (props) => (
+            <Icon {...props}>
+                <path d="m22 2-7 20-4-9-9-4Z"></path>
+                <path d="M22 2 11 13"></path>
+            </Icon>
+        );
+        
+        const Trash2 = (props) => (
+            <Icon {...props}>
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <line x1="10" x2="10" y1="11" y2="17"></line>
+                <line x1="14" x2="14" y1="11" y2="17"></line>
+            </Icon>
+        );
+        
+        const Download = (props) => (
+            <Icon {...props}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7,10 12,15 17,10"></polyline>
+                <line x1="12" x2="12" y1="15" y2="3"></line>
+            </Icon>
+        );
+        
+        const Tag = (props) => (
+            <Icon {...props}>
+                <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.828 2.828 0 0 0 4.002 0l7.318-7.318a2.828 2.828 0 0 0 0-4.002z"></path>
+                <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+            </Icon>
+        );
+        
+        const MessageSquare = (props) => (
+            <Icon {...props}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </Icon>
+        );
+        
+        const Menu = (props) => (
+            <Icon {...props}>
+                <line x1="4" x2="20" y1="6" y2="6"></line>
+                <line x1="4" x2="20" y1="12" y2="12"></line>
+                <line x1="4" x2="20" y1="18" y2="18"></line>
+            </Icon>
+        );
+        
+        const X = (props) => (
+            <Icon {...props}>
+                <path d="M18 6 6 18"></path>
+                <path d="m6 6 12 12"></path>
+            </Icon>
+        );
+        
+        const Settings = (props) => (
+            <Icon {...props}>
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </Icon>
+        );
+        
+        const Star = (props) => (
+            <Icon {...props}>
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
+            </Icon>
+        );
+
+        const AIChat = () => {
+            const [darkMode, setDarkMode] = useState(true);
+            const [sidebarOpen, setSidebarOpen] = useState(true);
+            const [selectedModel, setSelectedModel] = useState('claude-sonnet-4');
+            const [isLoading, setIsLoading] = useState(false);
+            const [showApiSettings, setShowApiSettings] = useState(false);
+
+            const aiModels = {
+                'claude-sonnet-4': {
+                    name: 'Claude Sonnet 4',
+                    provider: 'Anthropic'
+                },
+                'claude-opus-4': {
+                    name: 'Claude Opus 4',
+                    provider: 'Anthropic'
+                },
+                'claude-haiku-4': {
+                    name: 'Claude Haiku 4',
+                    provider: 'Anthropic'
+                }
+            };
+
+            const callAI = async (messages, model) => {
+                try {
+                    // Combine the conversation history into a single prompt
+                    const prompt = messages.map(msg => 
+                        `${msg.type === 'user' ? 'User' : 'AI'}: ${msg.content}`
+                    ).join('\n\n');
+                    
+                    const response = await puter.ai.chat(prompt, { model: model });
+                    return response.message.content[0].text;
+                } catch (error) {
+                    console.error('AI Error:', error);
+                    throw new Error('Failed to get response from AI');
+                }
+            };
+
+            const [conversations, setConversations] = useState([
+                {
+                    id: 1,
+                    title: "AI Assistant Help",
+                    messages: [
+                        { id: 1, type: 'user', content: 'Hello! Can you help me with coding?' },
+                        { id: 2, type: 'ai', content: 'Of course! I\'d be happy to help you with coding. What specific programming language or problem are you working on?' }
+                    ],
+                    folder: 'General',
+                    tags: ['coding', 'help'],
+                    timestamp: new Date(Date.now() - 86400000),
+                    starred: false
+                },
+                {
+                    id: 2,
+                    title: "Creative Writing Ideas",
+                    messages: [
+                        { id: 3, type: 'user', content: 'I need ideas for a science fiction story' },
+                        { id: 4, type: 'ai', content: 'Here are some compelling sci-fi concepts: Time travel paradoxes, AI consciousness emergence, interstellar communication delays, quantum reality splitting, and bioengineered ecosystems on Mars.' }
+                    ],
+                    folder: 'Creative',
+                    tags: ['writing', 'sci-fi', 'creative'],
+                    timestamp: new Date(Date.now() - 172800000),
+                    starred: true
+                }
+            ]);
+            
+            const [folders, setFolders] = useState(['General', 'Creative', 'Work', 'Personal']);
+            const [currentConversation, setCurrentConversation] = useState(null);
+            const [newMessage, setNewMessage] = useState('');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedFolder, setSelectedFolder] = useState('All');
+            const [showTagModal, setShowTagModal] = useState(false);
+            const [newTag, setNewTag] = useState('');
+            const [selectedTags, setSelectedTags] = useState([]);
+            const [filterTags, setFilterTags] = useState([]);
+            const messagesEndRef = useRef(null);
+
+            useEffect(() => {
+                scrollToBottom();
+            }, [currentConversation?.messages]);
+
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            };
+
+            const createNewConversation = () => {
+                const newConv = {
+                    id: Date.now(),
+                    title: 'New Conversation',
+                    messages: [],
+                    folder: selectedFolder === 'All' ? 'General' : selectedFolder,
+                    tags: [],
+                    timestamp: new Date(),
+                    starred: false
+                };
+                setConversations(prev => [newConv, ...prev]);
+                setCurrentConversation(newConv);
+                setSidebarOpen(false);
+            };
+
+            const sendMessage = async () => {
+                if (!newMessage.trim() || !currentConversation) return;
+
+                const userMessage = {
+                    id: Date.now(),
+                    type: 'user',
+                    content: newMessage
+                };
+
+                const tempConv = {
+                    ...currentConversation,
+                    messages: [...currentConversation.messages, userMessage],
+                    timestamp: new Date()
+                };
+
+                setConversations(prev => prev.map(conv => 
+                    conv.id === currentConversation.id ? tempConv : conv
+                ));
+                setCurrentConversation(tempConv);
+                setNewMessage('');
+                setIsLoading(true);
+
+                try {
+                    const aiResponse = await callAI(tempConv.messages, selectedModel);
+
+                    const aiMessage = {
+                        id: Date.now() + 1,
+                        type: 'ai',
+                        content: aiResponse
+                    };
+
+                    const updatedConv = {
+                        ...tempConv,
+                        messages: [...tempConv.messages, aiMessage]
+                    };
+
+                    setConversations(prev => prev.map(conv => 
+                        conv.id === currentConversation.id ? updatedConv : conv
+                    ));
+                    setCurrentConversation(updatedConv);
+
+                } catch (error) {
+                    console.error('AI Error:', error);
+                    
+                    const errorMessage = {
+                        id: Date.now() + 1,
+                        type: 'ai',
+                        content: `Error: ${error.message}`
+                    };
+
+                    const errorConv = {
+                        ...tempConv,
+                        messages: [...tempConv.messages, errorMessage]
+                    };
+
+                    setConversations(prev => prev.map(conv => 
+                        conv.id === currentConversation.id ? errorConv : conv
+                    ));
+                    setCurrentConversation(errorConv);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const deleteConversation = (id) => {
+                setConversations(prev => prev.filter(conv => conv.id !== id));
+                if (currentConversation?.id === id) {
+                    setCurrentConversation(null);
+                }
+            };
+
+            const toggleStar = (id) => {
+                setConversations(prev => prev.map(conv =>
+                    conv.id === id ? { ...conv, starred: !conv.starred } : conv
+                ));
+            };
+
+            const addTag = () => {
+                if (!newTag.trim() || !currentConversation) return;
+                
+                const updatedConv = {
+                    ...currentConversation,
+                    tags: [...new Set([...currentConversation.tags, newTag.trim()])]
+                };
+                
+                setConversations(prev => prev.map(conv =>
+                    conv.id === currentConversation.id ? updatedConv : conv
+                ));
+                setCurrentConversation(updatedConv);
+                setNewTag('');
+                setShowTagModal(false);
+            };
+
+            const exportToPDF = () => {
+                if (!currentConversation) return;
+                
+                const content = currentConversation.messages.map(msg => 
+                    `${msg.type.toUpperCase()}: ${msg.content}`
+                ).join('\n\n');
+                
+                const blob = new Blob([
+                    `Conversation: ${currentConversation.title}\n` +
+                    `Date: ${currentConversation.timestamp.toLocaleDateString()}\n` +
+                    `Tags: ${currentConversation.tags.join(', ')}\n\n` +
+                    content
+                ], { type: 'text/plain' });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${currentConversation.title}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const filteredConversations = conversations.filter(conv => {
+                const matchesSearch = conv.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                     conv.messages.some(msg => msg.content.toLowerCase().includes(searchTerm.toLowerCase()));
+                const matchesFolder = selectedFolder === 'All' || conv.folder === selectedFolder;
+                const matchesTags = filterTags.length === 0 || filterTags.some(tag => conv.tags.includes(tag));
+                return matchesSearch && matchesFolder && matchesTags;
+            });
+
+            const allTags = [...new Set(conversations.flatMap(conv => conv.tags))];
+
+            return (
+                <div className={`flex h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+                    {/* Sidebar - Keep all the same sidebar code as before */}
+                    <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden border-r ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+                        <div className="flex flex-col h-full">
+                            {/* Header */}
+                            <div className="p-4 border-b border-gray-700">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>AI Chat</h1>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setShowApiSettings(true)}
+                                            className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                                            title="API Settings"
+                                        >
+                                            <Settings size={20} />
+                                        </button>
+                                        <button
+                                            onClick={() => setDarkMode(!darkMode)}
+                                            className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                                        >
+                                            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={createNewConversation}
+                                    className="w-full flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                                >
+                                    <Plus size={16} />
+                                    New Chat
+                                </button>
+                            </div>
+
+                            {/* Search */}
+                            <div className="p-4">
+                                <div className="relative">
+                                    <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} size={16} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search conversations..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Filters */}
+                            <div className="px-4 pb-4">
+                                <div className="mb-3">
+                                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Folder</label>
+                                    <select
+                                        value={selectedFolder}
+                                        onChange={(e) => setSelectedFolder(e.target.value)}
+                                        className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    >
+                                        <option value="All">All Folders</option>
+                                        {folders.map(folder => (
+                                            <option key={folder} value={folder}>{folder}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {allTags.length > 0 && (
+                                    <div>
+                                        <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Tags</label>
+                                        <div className="flex flex-wrap gap-1">
+                                            {allTags.map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    onClick={() => setFilterTags(prev => 
+                                                        prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                                                    )}
+                                                    className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                                                        filterTags.includes(tag)
+                                                            ? 'bg-blue-600 text-white'
+                                                            : `${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`
+                                                    }`}
+                                                >
+                                                    {tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Conversations List */}
+                            <div className="flex-1 overflow-y-auto">
+                                {filteredConversations.length === 0 ? (
+                                    <div className="p-4 text-center text-gray-500">
+                                        No conversations found
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-gray-700">
+                                        {filteredConversations.map(conv => (
+                                            <div
+                                                key={conv.id}
+                                                className={`p-4 cursor-pointer transition-colors ${currentConversation?.id === conv.id ? (darkMode ? 'bg-gray-700' : 'bg-gray-200') : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}`}
+                                                onClick={() => {
+                                                    setCurrentConversation(conv);
+                                                    setSidebarOpen(false);
+                                                }}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <h3 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                        {conv.starred && <Star className="inline mr-1 text-yellow-500" size={14} />}
+                                                        {conv.title}
+                                                    </h3>
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleStar(conv.id);
+                                                            }}
+                                                            className={`p-1 rounded ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-300'}`}
+                                                        >
+                                                            <Star
+                                                                size={16}
+                                                                className={conv.starred ? 'text-yellow-500 fill-yellow-500' : (darkMode ? 'text-gray-400' : 'text-gray-500')}
+                                                            />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                deleteConversation(conv.id);
+                                                            }}
+                                                            className={`p-1 rounded ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-300'}`}
+                                                        >
+                                                            <Trash2 size={16} className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <p className={`text-sm mt-1 truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    {conv.messages[0]?.content || 'Empty conversation'}
+                                                </p>
+                                                <div className="flex justify-between items-center mt-2">
+                                                    <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                                        {conv.folder}
+                                                    </span>
+                                                    <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                                        {conv.timestamp.toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                                {conv.tags.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {conv.tags.map(tag => (
+                                                            <span
+                                                                key={tag}
+                                                                className={`px-2 py-0.5 text-xs rounded-full ${
+                                                                    darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                                                                }`}
+                                                            >
+                                                                {tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content - Keep all the same main content code as before */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Header */}
+                        <div className={`p-4 border-b flex items-center justify-between ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                            >
+                                <Menu size={20} />
+                            </button>
+                            <div className="flex items-center gap-4">
+                                <select
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    className={`px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                >
+                                    {Object.entries(aiModels).map(([key, model]) => (
+                                        <option key={key} value={key}>{model.name}</option>
+                                    ))}
+                                </select>
+                                {currentConversation && (
+                                    <button
+                                        onClick={exportToPDF}
+                                        className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                                        title="Export Conversation"
+                                    >
+                                        <Download size={20} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {currentConversation ? (
+                                <div className="space-y-4">
+                                    {currentConversation.messages.map(msg => (
+                                        <div
+                                            key={msg.id}
+                                            className={`max-w-3xl mx-auto p-4 rounded-lg ${msg.type === 'user' ? (darkMode ? 'bg-blue-900 text-white' : 'bg-blue-100 text-blue-900') : (darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900')}`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className={`mt-1 flex-shrink-0 ${msg.type === 'user' ? (darkMode ? 'text-blue-300' : 'text-blue-600') : (darkMode ? 'text-gray-400' : 'text-gray-600')}`}>
+                                                    {msg.type === 'user' ? (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                                            <circle cx="12" cy="7" r="4"></circle>
+                                                        </svg>
+                                                    ) : (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M12 8V4H8"></path>
+                                                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                                            <path d="M2 14h2"></path>
+                                                            <path d="M20 14h2"></path>
+                                                            <path d="M15 13v2"></path>
+                                                            <path d="M9 13v2"></path>
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isLoading && (
+                                        <div className="max-w-3xl mx-auto p-4 rounded-lg bg-gray-700 text-white">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-gray-400">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M12 8V4H8"></path>
+                                                        <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                                        <path d="M2 14h2"></path>
+                                                        <path d="M20 14h2"></path>
+                                                        <path d="M15 13v2"></path>
+                                                        <path d="M9 13v2"></path>
+                                                    </svg>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                    <MessageSquare size={48} className={`mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+                                    <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>No Conversation Selected</h2>
+                                    <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        Select an existing conversation or create a new one to start chatting
+                                    </p>
+                                    <button
+                                        onClick={createNewConversation}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                                    >
+                                        <Plus size={16} />
+                                        New Conversation
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Input Area */}
+                        {currentConversation && (
+                            <div className={`p-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+                                <div className="max-w-3xl mx-auto flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                                        placeholder="Type your message..."
+                                        className={`flex-1 px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                        disabled={isLoading}
+                                    />
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={!newMessage.trim() || isLoading}
+                                        className={`p-2 rounded-lg ${(!newMessage.trim() || isLoading) ? (darkMode ? 'bg-gray-700 text-gray-500' : 'bg-gray-200 text-gray-400') : 'bg-blue-600 hover:bg-blue-700 text-white'} transition-colors`}
+                                    >
+                                        <Send size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* API Settings Modal - Simplified since we don't need API keys anymore */}
+                    {showApiSettings && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className={`w-full max-w-md rounded-lg shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                                <div className="p-4 border-b flex justify-between items-center">
+                                    <h3 className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>AI Settings</h3>
+                                    <button
+                                        onClick={() => setShowApiSettings(false)}
+                                        className={`p-1 rounded-full ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <div className="space-y-1">
+                                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            AI Model
+                                        </label>
+                                        <select
+                                            value={selectedModel}
+                                            onChange={(e) => setSelectedModel(e.target.value)}
+                                            className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                        >
+                                            {Object.entries(aiModels).map(([key, model]) => (
+                                                <option key={key} value={key}>{model.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        Powered by Puter.js - No API keys required
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t flex justify-end">
+                                    <button
+                                        onClick={() => setShowApiSettings(false)}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                                    >
+                                        Save Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Render the app
+        ReactDOM.render(React.createElement(AIChat), document.getElementById('root'));
+    </script>
+</body>
+</html>
